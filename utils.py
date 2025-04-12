@@ -1,8 +1,4 @@
 import os
-import requests
-from typing import Dict, Any
-from langsmith import traceable
-from tavily import TavilyClient
 from openperplex import OpenperplexSync
 
 from dotenv import load_dotenv
@@ -75,102 +71,6 @@ def format_sources(search_results):
         f"* {source['title']} : {source['url']}"
         for source in search_results['results']
     )
-
-@traceable
-def tavily_search(query, include_raw_content=True, max_results=3):
-    """ Search the web using the Tavily API.
-    
-    Args:
-        query (str): The search query to execute
-        include_raw_content (bool): Whether to include the raw_content from Tavily in the formatted string
-        max_results (int): Maximum number of results to return
-        
-    Returns:
-        dict: Search response containing:
-            - results (list): List of search result dictionaries, each containing:
-                - title (str): Title of the search result
-                - url (str): URL of the search result
-                - content (str): Snippet/summary of the content
-                - raw_content (str): Full content of the page if available"""
-     
-    tavily_client = TavilyClient()
-    return tavily_client.search(query, 
-                         max_results=max_results, 
-                         include_raw_content=include_raw_content)
-
-@traceable
-def perplexity_search(query: str, 
-                      perplexity_search_loop_count: int) -> Dict[str, Any]:
-    """Search the web using the Perplexity API.
-    
-    Args:
-        query (str): The search query to execute
-        perplexity_search_loop_count (int): The loop step for perplexity search (starts at 0)
-  
-    Returns:
-        dict: Search response containing:
-            - results (list): List of search result dictionaries, each containing:
-                - title (str): Title of the search result
-                - url (str): URL of the search result
-                - content (str): Snippet/summary of the content
-                - raw_content (str): Full content of the page if available
-    """
-
-    headers = {
-        "accept": "application/json",
-        "content-type": "application/json",
-        "Authorization": f"Bearer {os.getenv('PERPLEXITY_API_KEY')}"
-    }
-    
-    payload = {
-        "model": "sonar",
-        "messages": [
-            {
-                "role": "system",
-                "content": "Search the web and provide factual information with sources."
-            },
-            {
-                "role": "user",
-                "content": query
-            }
-        ]
-    }
-    
-    response = requests.post(
-        "https://api.perplexity.ai/chat/completions",
-        headers=headers,
-        json=payload
-    )
-    response.raise_for_status()  # Raise exception for bad status codes
-    
-    # Parse the response
-    data = response.json()
-    content = data["choices"][0]["message"]["content"]
-
-    # Perplexity returns a list of citations for a single search result
-    citations = data.get("citations", ["https://perplexity.ai"])
-    
-    # Return first citation with full content, others just as references
-    results = [{
-        "title": f"Perplexity Search {perplexity_search_loop_count + 1}, Source 1",
-        "link": citations[0],
-        "content": content,
-        "raw_content": content
-    }]
-    
-    # Add additional citations without duplicating content
-    for i, citation in enumerate(citations[1:], start=2):
-        results.append({
-            "title": f"Perplexity Search {perplexity_search_loop_count + 1}, Source {i}",
-            "link": citation,
-            "content": "See above for full content",
-            "raw_content": None
-        })
-    
-    return {"results": results}
-
-
-
 
 def openperplex_search(query: str,
                        model="gemini-2.0-flash",

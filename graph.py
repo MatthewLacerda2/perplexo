@@ -80,8 +80,6 @@ def final_writer(state: ReportState):
     return {"final_response": final_response}
 
 builder = StateGraph(ReportState)
-
-# Add the node
 builder.add_node("build_first_query", build_first_query)
 builder.add_node("single_search", single_search)
 builder.add_node("final_writer", final_writer)
@@ -92,7 +90,6 @@ builder.add_conditional_edges(
     spawn_researchers,
     ["single_search"]
 )
-
 builder.add_edge("single_search", "final_writer")
 builder.add_edge("final_writer", END)
 
