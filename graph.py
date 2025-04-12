@@ -1,15 +1,18 @@
 from pydantic import BaseModel
 
 from langchain_ollama import ChatOllama
-from langgraph.graph import StateGraph
+from langgraph.graph import START, END, StateGraph
 from langgraph.types import Send
 from tavily import TavilyClient
+
 
 from schemas import *
 from prompts import *
 
 from dotenv import load_dotenv
 load_dotenv()
+
+import streamlit as st
 
 llm = ChatOllama(model="llama3.1")
 reasoning_llm = ChatOllama(model="llama3.1")
@@ -78,13 +81,30 @@ builder = StateGraph(ReportState)
 
 # Add the node
 builder.add_node("build_first_query", build_first_query)
+builder.add_node("single_search", single_search)
+builder.add_node("final_writer", final_writer)
 
-# Set the entry point instead of using "START"
-builder.set_entry_point("build_first_query")
+builder.add_edge(START, "build_first_query")
+builder.add_conditional_edges(
+    "build_first_query",
+    spawn_researchers,
+    ["single_search"]
+)
+
+builder.add_edge("single_search", "final_writer")
+builder.add_edge("final_writer", END)
 
 graph = builder.compile()
 
 if __name__ == "__main__":
+    from IPython.display import Image, display
+    display(Image(graph.get_graph().draw_mermaid_png()))
     
-    user_input = "Explain the thought process of reasoning LLMs"
-    graph.invoke({"user_input": user_input})
+    st.title("Local Perplexity")
+    
+    user_input = st.text_input("Enter your question:", value="Explain the thought process of reasoning LLMs")
+    
+    if st.button("Generate"):
+        with st.status("Generating..."):
+            response = graph.invoke({"user_input": user_input})
+            st.write(response)
