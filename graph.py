@@ -14,8 +14,8 @@ load_dotenv()
 
 import streamlit as st
 
-llm = ChatOllama(model="llama3.1")
-reasoning_llm = ChatOllama(model="llama3.1")
+llm = ChatOllama(model="gemma3")
+reasoning_llm = ChatOllama(model="gemma3")
 
 def build_first_query(state: ReportState):
     class QueryList(BaseModel):
@@ -41,7 +41,7 @@ def single_search(query:str):
     query_results = []
     for result in results["results"]:
         url = result["url"]
-        url_extraction = tavily_client.extract_url(url)
+        url_extraction = tavily_client.extract(url)
         
         if len(url_extraction["results"]) > 0:
             raw_content = url_extraction["results"][0]["raw_content"]

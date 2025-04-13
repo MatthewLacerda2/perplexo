@@ -1,5 +1,4 @@
 import os
-from openperplex import OpenperplexSync
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -71,30 +70,3 @@ def format_sources(search_results):
         f"* {source['title']} : {source['url']}"
         for source in search_results['results']
     )
-
-def openperplex_search(query: str,
-                       model="gemini-2.0-flash",
-                       ):
-    client_sync = OpenperplexSync(os.environ["OPENPERPLEX_API_KEY"])
-    
-    result = client_sync.search(
-        query=query,
-        model=model,
-        date_context="2024-08-25",
-        location="us",
-        response_language="en",
-        answer_type="text",
-        search_type="general",
-        return_citations=True,
-        return_sources=True,
-        return_images=False,
-        recency_filter="anytime"
-    )
-
-    results = {
-        "title": query,
-        "content": result["llm_response"],
-        "sources": result["sources"]
-    }
-
-    return results
