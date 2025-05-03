@@ -14,8 +14,8 @@ load_dotenv()
 
 import streamlit as st
 
-llm = ChatOllama(model="gemma3")
-reasoning_llm = ChatOllama(model="gemma3")
+llm = ChatOllama(model="deepseek-r1:8b")
+reasoning_llm = ChatOllama(model="deepseek-r1:8b")
 
 def build_first_query(state: ReportState):
     class QueryList(BaseModel):
@@ -36,7 +36,7 @@ def single_search(query:str):
     
     tavily_client = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
     
-    results = tavily_client.search(query, max_results=5, include_raw_content=False)
+    results = tavily_client.search(query, max_results=3, include_raw_content=False)
     
     query_results = []
     for result in results["results"]:
@@ -59,7 +59,7 @@ def single_search(query:str):
 def final_writer(state: ReportState):
     search_results = ""
     references = ""
-    for i, result in enumerate(state.queries_results):
+    for i, result in enumerate(state.query_results):
         search_results += f"[{i+1}]\n\n"
         search_results += f"Title: {result.title}\n"
         search_results += f"URL: {result.url}\n"
@@ -97,6 +97,8 @@ graph = builder.compile()
 
 if __name__ == "__main__":
     from IPython.display import Image, display
+    import time
+    from datetime import datetime
     display(Image(graph.get_graph().draw_mermaid_png()))
     
     st.title("Local Perplexity")
@@ -104,6 +106,8 @@ if __name__ == "__main__":
     user_input = st.text_input("Enter your question:", value="Explain the thought process of reasoning LLMs")
     
     if st.button("Pesquisar"):
+        start_time = time.time()
+        start_datetime = datetime.now().strftime("%H:%M:%S")
         # with st.spinner("Gerando resposta", show_time=True):
         with st.status("Gerando resposta"):
             for output in graph.stream({"user_input": user_input},
@@ -118,6 +122,13 @@ if __name__ == "__main__":
         think_str = response.split("</think>")[0]
         final_response = response.split("</think>")[1]
 
+        end_time = time.time()
+        end_datetime = datetime.now().strftime("%H:%M:%S")
+        elapsed = end_time - start_time
+
         with st.expander("🧠 Reflexão", expanded=False):
             st.write(think_str)
+        st.write(f"Started at: {start_datetime}")
+        st.write(f"Finished at: {end_datetime}")
+        st.write(f"Elapsed time: {elapsed:.2f} seconds")
         st.write(final_response)

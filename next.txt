@@ -1,0 +1,5 @@
+fazer virar um pacote python que possa ser instalavel com github
+
+deixar escolher a llm pra pesquisa e pra reasoning
+permitir api do google gemini
+    ou de alguem que deixe de graça
